@@ -1,0 +1,11 @@
+1. compile and run SERVER:
+
+g++ -fdiagnostics-color=always -g ./socket_tools.cpp ./server.cpp -o ./server
+./server
+
+2. compile and run CLIENT:
+
+g++ -fdiagnostics-color=always -g ./socket_tools.cpp ./client.cpp -o ./client
+./client
+
+
