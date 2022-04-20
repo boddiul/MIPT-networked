@@ -1,0 +1,20 @@
+1. compile and run SERVER:
+
+g++ -fdiagnostics-color=always -g ./server.cpp -o ./server
+./server
+
+2. compile and run LOBBY:
+
+g++ -fdiagnostics-color=always -g ./lobby.cpp -o ./lobby
+./lobby
+
+3. compile and run CLIENT:
+
+g++ -fdiagnostics-color=always -g ./client.cpp -o ./client
+./client
+
+4. Run CLIENT with "/start" in N seconds:
+
+./client N
+
+
