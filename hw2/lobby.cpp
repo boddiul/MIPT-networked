@@ -2,10 +2,12 @@
 #include <iostream>
 #include <string.h>
 
+#include "tools.h"
 
 const char* startCommand = "/start";
-const char* gameServerAddress = "localhost:12349";
-const int lobbyPort = 10887;
+const char* gameServerHost = "localhost";
+const uint gameServerPort = 12349;
+const uint lobbyPort = 10887;
 
 
 int main(int argc, const char **argv)
@@ -36,6 +38,7 @@ int main(int argc, const char **argv)
 
   bool gameStarted = false;
 
+  message msg;
 
   while (true)
   {
@@ -49,26 +52,35 @@ int main(int argc, const char **argv)
 
         if (gameStarted)
         {
-            ENetPacket *packet = enet_packet_create(gameServerAddress, strlen(gameServerAddress), ENET_PACKET_FLAG_RELIABLE);
-            enet_peer_send(event.peer, 0, packet); 
+            msg.type = LOBBY_TO_CLIENT_HOST_LINK;
+            msg.data = {gameServerHost, std::to_string(gameServerPort)};
+            send_message(&msg,event.peer,0,true);
         }
 
 
         break;
       case ENET_EVENT_TYPE_RECEIVE:
-        if (strcmp((char *)event.packet->data,startCommand)==0)
-        {
 
-          printf("Recieved START: '%s'\n", event.packet->data);
-          for (int i=0;i< server->connectedPeers; i++)
-            {
-              ENetPacket *packet = enet_packet_create(gameServerAddress, strlen(gameServerAddress), ENET_PACKET_FLAG_RELIABLE);
-              enet_peer_send(&server->peers[i], 0, packet); 
-            }
-          gameStarted = true;
+        data_to_message(event.packet->data,msg);
+
+        if (msg.type == CLIENT_TO_LOBBY_COMMAND)
+        {
+          
+          printf("Recieved COMMAND: '%s'\n", msg.data[0].c_str());
+
+          if (msg.data[0] == startCommand)
+          {
+              for (int i=0;i< server->connectedPeers; i++)
+                {
+                  msg.type = LOBBY_TO_CLIENT_HOST_LINK;
+                  msg.data = {gameServerHost, std::to_string(gameServerPort)};
+                  send_message(&msg,&server->peers[i],0,true);
+                }
+              gameStarted = true;
+          }
         }
-        else
-          printf("Recieved something: '%s'\n", event.packet->data);
+        //else
+        //  printf("Recieved something: '%s'\n", event.packet->data);
 
         enet_packet_destroy(event.packet);
         break;

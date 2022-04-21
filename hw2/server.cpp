@@ -2,7 +2,13 @@
 #include <iostream>
 #include <string.h>
 
+#include "tools.h"
 
+struct user {
+    uint id;
+    std::string name;
+    ENetPeer * peer;
+};
 
 const int gameServerPort = 12349;
 
@@ -32,6 +38,9 @@ int main(int argc, const char **argv)
     printf("Game server started\n");
   }
 
+  std::vector<user> users;
+  user newUser;
+  message msg;
 
   while (true)
   {
@@ -41,7 +50,23 @@ int main(int argc, const char **argv)
       switch (event.type)
       {
       case ENET_EVENT_TYPE_CONNECT:
-        printf("Connection with %x:%u established\n", event.peer->address.host, event.peer->address.port);
+
+        newUser = {.id = 100+(uint)users.size(),
+                  .name = "Player"+std::to_string(users.size()),
+                  .peer = event.peer};
+
+        users.push_back(newUser);
+
+        printf("Connection with %x:%u established. ID: %u; Name: %s\n", 
+                event.peer->address.host,
+                event.peer->address.port,
+                newUser.id,
+                newUser.name.c_str());
+        
+        msg.type = SERVER_TO_CLIENT_INIT;
+        msg.data = {std::to_string(newUser.id),newUser.name};
+
+        send_message(&msg,newUser.peer,0,true);
 
         break;
       case ENET_EVENT_TYPE_RECEIVE:

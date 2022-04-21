@@ -2,9 +2,14 @@
 #include <iostream>
 #include <string.h>
 
+#include "tools.h"
+
 const char* startCommand = "/start";
 const char* lobbyHost = "localhost";
 const int lobbyPort = 10887;
+
+
+
 
 int main(int argc, const char **argv)
 {
@@ -39,6 +44,7 @@ int main(int argc, const char **argv)
   uint32_t timeStart = enet_time_get();
 
   bool inLobby = true;
+  bool inGame = false;
 
   bool willCallStart = false;
   uint32_t timeToCallStart = 0;
@@ -57,7 +63,11 @@ int main(int argc, const char **argv)
 
   uint32_t lastUpdateSendTime = timeStart;
 
+  message msg = {};
 
+
+  std::string myName;
+  uint myId;
 
   bool connected = false;
   while (true)
@@ -72,28 +82,41 @@ int main(int argc, const char **argv)
         connected = true;
         break;
       case ENET_EVENT_TYPE_RECEIVE:
+      
+        data_to_message(event.packet->data,msg);
+
         if (inLobby)
         {
-            
-
-            char *line = (char *)event.packet->data;
-            char *p;
-            char *sHost = strtok_r(line, ":", &p);
-            char *sPort = strtok_r(NULL, ":", &p);
-
-            enet_address_set_host(&address, sHost);
-            address.port = strtol(sPort,nullptr,10);
-
-
-            serverPeer = enet_host_connect(client, &address, 2, 0);
-            if (!serverPeer)
+            if (msg.type == LOBBY_TO_CLIENT_HOST_LINK)
             {
-              printf("Cannot connect to server\n");
-              return 1;
+      
+                enet_address_set_host(&address, msg.data[0].c_str());
+                address.port = std::atoi(msg.data[1].c_str());
+
+                serverPeer = enet_host_connect(client, &address, 2, 0);
+                if (!serverPeer)
+                {
+                  printf("Cannot connect to server\n");
+                  return 1;
+                }
+                else
+                {
+                  printf("Connected to server\n");
+                  inLobby = false;
+                  inGame = true;
+                }
             }
-            else
+
+        }
+        else if (inGame)
+        {
+            if (msg.type == SERVER_TO_CLIENT_INIT)
             {
-              printf("Connected to server\n");
+                myId = std::atoi(msg.data[0].c_str());
+                myName = msg.data[1];
+                printf("My ID: %u; My name: %s\n",myId,myName.c_str());
+
+
             }
         }
         enet_packet_destroy(event.packet);  
@@ -112,8 +135,11 @@ int main(int argc, const char **argv)
         
           printf("%s\n",startCommand);
 
-          ENetPacket *packet = enet_packet_create(startCommand, strlen(startCommand), ENET_PACKET_FLAG_RELIABLE);
-          enet_peer_send(serverPeer, 0, packet);
+          msg.type = CLIENT_TO_LOBBY_COMMAND;
+          msg.data = {startCommand};
+
+          send_message(&msg,serverPeer,0,true);
+          
           willCallStart = false;
       }
 
