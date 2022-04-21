@@ -79,8 +79,6 @@ int main(int argc, const char **argv)
               gameStarted = true;
           }
         }
-        //else
-        //  printf("Recieved something: '%s'\n", event.packet->data);
 
         enet_packet_destroy(event.packet);
         break;

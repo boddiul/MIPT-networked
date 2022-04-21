@@ -42,6 +42,9 @@ int main(int argc, const char **argv)
   user newUser;
   message msg;
 
+  uint32_t timeStart = enet_time_get();
+  uint32_t lastUpdateSendTime = timeStart;
+
   while (true)
   {
     ENetEvent event;
@@ -66,17 +69,73 @@ int main(int argc, const char **argv)
         msg.type = SERVER_TO_CLIENT_INIT;
         msg.data = {std::to_string(newUser.id),newUser.name};
 
+        for (int i=0;i<users.size()-1;i++)
+        {
+            msg.data.push_back(std::to_string(users[i].id));
+            msg.data.push_back(users[i].name);
+        }
+
         send_message(&msg,newUser.peer,0,true);
+
+        msg.type = SERVER_TO_CLIENT_NEW_CONNECTED;
+        msg.data = {std::to_string(newUser.id),newUser.name};
+        
+        for (int i=0;i< server->connectedPeers; i++)
+            if (&server->peers[i] != event.peer)
+                send_message(&msg,&server->peers[i],0,true);
+
 
         break;
       case ENET_EVENT_TYPE_RECEIVE:
-        printf("Recieved something: '%s'\n", event.packet->data);
+        data_to_message(event.packet->data,msg);
+
+
+        if (msg.type == CLIENT_TO_SERVER_UPDATE)
+        {
+            for (int k=0;k<users.size();k++)
+              if (users[k].peer==event.peer)
+              {
+                printf("Player (%s) time: %s\n",users[k].name.c_str(),msg.data[0].c_str());
+                break;
+              }
+
+        }
 
         enet_packet_destroy(event.packet);
         break;
       default:
         break;
       };
+    }
+    if (server->connectedPeers>0)
+    {
+      uint32_t curTime = enet_time_get();
+
+      if (curTime - lastUpdateSendTime > 1000)
+      {
+        lastUpdateSendTime = curTime;
+        msg = {.type = SERVER_TO_CLIENT_UPDATE,.data = {std::to_string(curTime-timeStart)}};
+
+        for (int i=0;i< server->connectedPeers; i++)
+            send_message(&msg,&server->peers[i],0,false);
+
+        msg.type = SERVER_TO_CLIENT_PING_LIST;
+        msg.data = {};
+
+        for (int i=0;i<users.size();i++)
+        {
+            msg.data.push_back(std::to_string(users[i].id));
+            msg.data.push_back(std::to_string(users[i].peer->roundTripTime));
+        }
+
+        for (int i=0;i< server->connectedPeers; i++)
+            send_message(&msg,&server->peers[i],0,false);
+
+
+      }
+      
+
+
     }
   }
 

@@ -115,8 +115,25 @@ int main(int argc, const char **argv)
                 myId = std::atoi(msg.data[0].c_str());
                 myName = msg.data[1];
                 printf("My ID: %u; My name: %s\n",myId,myName.c_str());
+                printf("Other players (total %lu):\n",(msg.data.size()-2)/2);
+                for (int i=0;i<(msg.data.size()-2)/2;i++)
+                    printf("(%s) [%s]\n",msg.data[3+2*i].c_str(),msg.data[2+2*i].c_str());
 
-
+            }
+            else if (msg.type == SERVER_TO_CLIENT_NEW_CONNECTED)
+            {
+                printf("New Player connected (%s) [%s]\n",msg.data[1].c_str(),msg.data[0].c_str());
+            }
+            else if (msg.type == SERVER_TO_CLIENT_UPDATE)
+            {
+                printf("Server time (%s)\n",msg.data[0].c_str());
+            }
+            else if (msg.type == SERVER_TO_CLIENT_PING_LIST)
+            {
+                printf("PING LIST (id:ping): ");
+                for (int i=0;i<(msg.data.size())/2;i++)
+                    printf("(%s:%s)",msg.data[2*i].c_str(),msg.data[2*i+1].c_str());
+                printf("\n");
             }
         }
         enet_packet_destroy(event.packet);  
@@ -146,6 +163,9 @@ int main(int argc, const char **argv)
       if (curTime - lastUpdateSendTime > 1000)
       {
         lastUpdateSendTime = curTime;
+        msg = {.type = CLIENT_TO_SERVER_UPDATE,.data = {std::to_string(curTime-timeStart)}};
+        
+        send_message(&msg,serverPeer,0,true);
       }
       
 
