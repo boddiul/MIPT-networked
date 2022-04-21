@@ -48,9 +48,10 @@ int main(int argc, const char **argv)
               std::getline(std::cin, input);
 
               msg.type = C_TO_S_TEXT;
-              msg.size = (uint)input.size();
-              msg.data = new char[input.size()];
-              strcpy(msg.data, input.c_str());
+              msg.size = (uint)input.size()+1;
+              msg.data = new char[input.size()+1];
+              msg.data[0] = myId;
+              strcpy(&msg.data[1], input.c_str());
               bool ok = send_message(sfd,&msg,serverAddrInfo.ai_addr,serverAddrInfo.ai_addrlen);
           }
           

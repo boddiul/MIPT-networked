@@ -7,6 +7,15 @@
 #include <iostream>
 #include "socket_tools.h"
 
+#include <vector>
+
+struct user {
+  char id;
+  char* name;
+  sockaddr sockAddr;
+  socklen_t sockLen;
+};
+
 int main(int argc, const char **argv)
 {
 
@@ -20,10 +29,11 @@ int main(int argc, const char **argv)
 
 
 
-  sockaddr clientAddr;
-  socklen_t clientAddrLen;
-  char clientId;
-  char* clientName;
+  std::vector<user> users;
+
+  
+
+
   message msg;
 
   while (true)
@@ -46,31 +56,35 @@ int main(int argc, const char **argv)
 
       if (rec)
       {
+        user newUser;
         switch (msg.type)
         {
         case C_TO_S_INIT:
-              clientAddr = from;
-              clientAddrLen = addr_len;
+              newUser = {.id = (char)users.size()};
+              newUser.name = new char[msg.size];
+              strcpy(newUser.name,msg.data);
 
-              clientName = new char[msg.size];
-              strcpy(clientName,msg.data);
+              newUser.sockAddr = from;
+              newUser.sockLen = addr_len;
 
+              users.push_back(newUser);
 
-
-              printf("User %s connected\n",clientName);
-              clientId = 12;
+              printf("User %s connected\n",newUser.name);
 
               msg.type = S_TO_C_INIT;
               msg.size = 1;
-              msg.data = new char[1] {clientId};
-
+              msg.data = new char[1] {newUser.id};
                 
-              send_message(sfd,&msg,&clientAddr,clientAddrLen);
+              send_message(sfd,&msg,&newUser.sockAddr,newUser.sockLen);
           
           break;
         
           case C_TO_S_TEXT:
-              printf("Message from %s: %s\n",clientName,msg.data);
+              for (int i=0;i<users.size();i++)
+                  if (msg.data[0]==users[i].id)
+                  {
+                      printf("Message from %s: %s\n",users[i].name,&msg.data[1]);
+                  }
           break;
         }
 
