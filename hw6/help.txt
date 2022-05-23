@@ -1,0 +1,33 @@
+1. compile all:
+
+g++ -g ./tools.cpp ./server.cpp -o ./server -lenet
+g++ -g ./tools.cpp ./matchmaker.cpp -o ./matchmaker -lenet
+g++ -g ./tools.cpp ./client.cpp -o ./client -lenet
+
+2. Run MATCHMAKER:
+
+./matchmaker
+
+3. Run server with port 12349:
+
+./server 12349
+
+3. Run server with port 12350:
+
+./server 12350
+
+5. Run CLIENT:
+
+./client
+
+6. Select room as client (SPACE to start typing command):
+
+/select
+1
+
+7. Start room as matchmaker (SPACE to start typing command):
+
+/start
+1
+
+
